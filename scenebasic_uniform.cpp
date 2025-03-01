@@ -13,6 +13,7 @@ using std::endl;
 
 #include <GLFW/glfw3.h>
 #include "helper/glutils.h"
+#include "helper/texture.h"
 
 using glm::vec3;
 using glm::vec4;
@@ -42,6 +43,12 @@ void SceneBasic_Uniform::initScene()
 	prog.setUniform("Spotlight.La", vec3(0.5f));
 	prog.setUniform("Spotlight.Exponent", 50.f);
 	prog.setUniform("Spotlight.Cutoff", glm::radians(15.0f));
+
+	// texture
+
+	GLuint texID = Texture::loadTexture("media/texture/diffuse-orange.png");
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texID);
 }
 
 
@@ -86,6 +93,7 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Material.Ks", vec3(0.9f, 0.9f, 0.9f));
 	prog.setUniform("Material.Ka", vec3(0.2f, 0.2f, 0.2f));
 	prog.setUniform("Material.Shininess", 100.f);
+	prog.setUniform("IsTextured", false);
 
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, 0.0f, 0.0f));
@@ -98,6 +106,7 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Material.Ks", vec3(0.9f, 0.9f, 0.9f));
 	prog.setUniform("Material.Ka", vec3(0.2f, 0.2f, 0.2f));
 	prog.setUniform("Material.Shininess", 100.f);
+	prog.setUniform("IsTextured", true);
 
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, 1.0f, 0.0f));
