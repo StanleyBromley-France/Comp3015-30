@@ -5,6 +5,8 @@ in vec3 Normal;
 in vec2 TexCoord;
 
 layout (binding = 0) uniform sampler2D Tex1;
+layout (binding = 1) uniform sampler2D Tex2;
+
 
 layout (location = 0) out vec4 FragColor;
 
@@ -33,7 +35,10 @@ vec3 BlinnPhongModel(vec3 pos, vec3 n){
     // determines whether tex or mat data should be used
     vec3 ambientBase, diffuseBase;
     if (IsTextured) { // tex data
-        vec3 texColor = texture(Tex1, TexCoord).rgb;
+        vec4 texColor1 =  texture(Tex1, TexCoord);
+        vec4 texColor2 =  texture(Tex2, TexCoord);
+
+        vec3 texColor = mix(texColor1.rgb, texColor2.rgb, 0.5);
         ambientBase = texColor;
         diffuseBase = texColor;
     } else { // mat data

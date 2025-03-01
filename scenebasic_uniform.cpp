@@ -48,9 +48,13 @@ void SceneBasic_Uniform::initScene()
 
 	// texture
 
-	GLuint texID = Texture::loadTexture("media/texture/diffuse-orange.png");
+	GLuint orange = Texture::loadTexture("media/texture/diffuse-orange.png");
+	GLuint black = Texture::loadTexture("media/texture/diffuse-black.png");
+
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texID);
+	glBindTexture(GL_TEXTURE_2D, orange);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, black);
 }
 
 
@@ -113,7 +117,7 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("IsTextured", true);
 
 	model = mat4(1.0f);
-	model = glm::translate(model, vec3(0.0f, 1.0f, 0.0f));
+	model = glm::translate(model, vec3(0.0f, 0.8f, 0.0f));
 	model = glm::rotate(model, glm::radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
 
 	setMatrices();
