@@ -15,6 +15,8 @@ using std::endl;
 #include "helper/glutils.h"
 #include "helper/texture.h"
 
+#include "camControls.h"
+
 using glm::vec3;
 using glm::vec4;
 using glm::mat3;
@@ -34,7 +36,7 @@ void SceneBasic_Uniform::initScene()
 	compile();
 	glEnable(GL_DEPTH_TEST);
 	model = mat4(1.0f);
-	view = glm::lookAt(vec3(5.0f, 5.0f, 7.5f), vec3(0.0f, 0.75f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	view = CamControls::getViewMatrix();
 	projection = mat4(1.0f);
 
 	// light settings
@@ -81,6 +83,8 @@ void SceneBasic_Uniform::update(float t)
 	mat3 normalMatrix = mat3(vec3(view[0]), vec3(view[1]), vec3(view[2]));
 	prog.setUniform("Spotlight.Direction", normalMatrix * vec3(-lightPos));
 
+	// update view
+	view = CamControls::getViewMatrix();
 }
 
 void SceneBasic_Uniform::render()
@@ -105,7 +109,7 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Material.Kd", vec3(0.7f, 0.7f, 0.7f));
 	prog.setUniform("Material.Ks", vec3(0.9f, 0.9f, 0.9f));
 	prog.setUniform("Material.Ka", vec3(0.2f, 0.2f, 0.2f));
-	prog.setUniform("Material.Shininess", 100.f);
+	prog.setUniform("Material.Shininess", 250.f);
 	prog.setUniform("IsTextured", true);
 
 	model = mat4(1.0f);
