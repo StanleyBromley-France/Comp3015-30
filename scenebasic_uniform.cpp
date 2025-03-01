@@ -7,69 +7,41 @@
 using std::string;
 
 #include <iostream>
+#include <sstream>
 using std::cerr;
 using std::endl;
 
+#include <GLFW/glfw3.h>
 #include "helper/glutils.h"
 
 using glm::vec3;
+using glm::vec4;
+using glm::mat3;
+using glm::mat4;
 
-SceneBasic_Uniform::SceneBasic_Uniform() : angle(0.0f) {}
+SceneBasic_Uniform::SceneBasic_Uniform()
+	: 
+	plane(50.0f, 50.0f, 1, 1),
+	tPrev(0),
+	angle(0)
+{}
 
 void SceneBasic_Uniform::initScene()
 {
-    compile();
+	compile();
+	glEnable(GL_DEPTH_TEST);
+	model = mat4(1.0f);
+	view = glm::lookAt(vec3(5.0f, 5.0f, 7.5f), vec3(0.0f, 0.75f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	projection = mat4(1.0f);
 
-    std::cout << std::endl;
+	// light settings
 
-    prog.printActiveUniforms();
-
-    /////////////////// Create the VBO ////////////////////
-    float positionData[] = {
-        -0.8f, -0.8f, 0.0f,
-         0.8f, -0.8f, 0.0f,
-         0.0f,  0.8f, 0.0f };
-    float colorData[] = {
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f };
-
-    // Create and populate the buffer objects
-    GLuint vboHandles[2];
-    glGenBuffers(2, vboHandles);
-    GLuint positionBufferHandle = vboHandles[0];
-    GLuint colorBufferHandle = vboHandles[1];
-
-    glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
-    glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), positionData, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ARRAY_BUFFER, colorBufferHandle);
-    glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), colorData, GL_STATIC_DRAW);
-
-    // Create and set-up the vertex array object
-    glGenVertexArrays( 1, &vaoHandle );
-    glBindVertexArray(vaoHandle);
-
-    glEnableVertexAttribArray(0);  // Vertex position
-    glEnableVertexAttribArray(1);  // Vertex color
-
-    #ifdef __APPLE__
-        glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
-        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
-
-        glBindBuffer(GL_ARRAY_BUFFER, colorBufferHandle);
-        glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
-    #else
-    		glBindVertexBuffer(0, positionBufferHandle, 0, sizeof(GLfloat)*3);
-    		glBindVertexBuffer(1, colorBufferHandle, 0, sizeof(GLfloat)*3);
-
-    		glVertexAttribFormat(0, 3, GL_FLOAT, GL_FALSE, 0);
-    		glVertexAttribBinding(0, 0);
-    		glVertexAttribFormat(1, 3, GL_FLOAT, GL_FALSE, 0);
-    	  glVertexAttribBinding(1, 1);
-    #endif
-    glBindVertexArray(0);
+	prog.setUniform("Spotlight.L", vec3(0.9f));
+	prog.setUniform("Spotlight.La", vec3(0.5f));
+	prog.setUniform("Spotlight.Exponent", 50.f);
+	prog.setUniform("Spotlight.Cutoff", glm::radians(15.0f));
 }
+
 
 void SceneBasic_Uniform::compile()
 {
@@ -78,32 +50,58 @@ void SceneBasic_Uniform::compile()
 		prog.compileShader("shader/basic_uniform.frag");
 		prog.link();
 		prog.use();
-	} catch (GLSLProgramException &e) {
+	}
+	catch (GLSLProgramException& e) {
 		cerr << e.what() << endl;
 		exit(EXIT_FAILURE);
 	}
 }
 
-void SceneBasic_Uniform::update( float t )
+void SceneBasic_Uniform::update(float t)
 {
-	//update your angle here
+	// light positions
+
+	float deltaT = t - tPrev;
+	if (tPrev == 0.0f) deltaT = 0.0f;
+	tPrev = t;
+	angle += 0.25f * deltaT;
+	if (angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
+
+	vec4 lightPos = vec4(10.0f * cos(angle), 10.0f, 10.0f * sin(angle), 1.0f);
+	prog.setUniform("Spotlight.Position", vec3(view * lightPos));
+	mat3 normalMatrix = mat3(vec3(view[0]), vec3(view[1]), vec3(view[2]));
+	prog.setUniform("Spotlight.Direction", normalMatrix * vec3(-lightPos));
+
 }
 
 void SceneBasic_Uniform::render()
 {
-    glClear(GL_COLOR_BUFFER_BIT);
-    
-    //create the rotation matrix here and update the uniform in the shader 
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glBindVertexArray(vaoHandle);
-    glDrawArrays(GL_TRIANGLES, 0, 3 );
+	// render plane
 
-    glBindVertexArray(0);
+	prog.setUniform("Material.Kd", vec3(0.7f, 0.7f, 0.7f));
+	prog.setUniform("Material.Ks", vec3(0.9f, 0.9f, 0.9f));
+	prog.setUniform("Material.Ka", vec3(0.2f, 0.2f, 0.2f));
+	prog.setUniform("Material.Shininess", 100.f);
+
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, 0.0f, 0.0f));
+	setMatrices();
+	plane.render();
 }
 
 void SceneBasic_Uniform::resize(int w, int h)
 {
-    width = w;
-    height = h;
-    glViewport(0,0,w,h);
+	width = w;
+	height = h;
+	glViewport(0, 0, w, h);
+	projection = glm::perspective(glm::radians(70.0f), (float)w / h, 0.3f, 100.0f);
+}
+
+void SceneBasic_Uniform::setMatrices() {
+	mat4 mv = view * model;
+	prog.setUniform("ModelViewMatrix", mv);
+	prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
+	prog.setUniform("MVP", projection * mv);
 }

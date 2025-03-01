@@ -5,14 +5,21 @@
 
 #include <glad/glad.h>
 #include "helper/glslprogram.h"
+#include "glm/gtc/matrix_transform.hpp"
+
+#include "helper/plane.h"
+
 
 class SceneBasic_Uniform : public Scene
 {
 private:
-    GLuint vaoHandle;
+    Plane plane;
+
     GLSLProgram prog;
+    float tPrev;
     float angle;
 
+    void setMatrices();
     void compile();
 
 public:
