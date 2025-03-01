@@ -21,10 +21,12 @@ using glm::mat4;
 
 SceneBasic_Uniform::SceneBasic_Uniform()
 	: 
-	plane(50.0f, 50.0f, 1, 1),
+	platform(50.0f, 50.0f, 1, 1),
 	tPrev(0),
 	angle(0)
-{}
+{
+	car = ObjMesh::load("media/model/car.obj", true);
+}
 
 void SceneBasic_Uniform::initScene()
 {
@@ -59,7 +61,7 @@ void SceneBasic_Uniform::compile()
 
 void SceneBasic_Uniform::update(float t)
 {
-	// light positions
+	// light position update
 
 	float deltaT = t - tPrev;
 	if (tPrev == 0.0f) deltaT = 0.0f;
@@ -78,7 +80,7 @@ void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// render plane
+	// render platform
 
 	prog.setUniform("Material.Kd", vec3(0.7f, 0.7f, 0.7f));
 	prog.setUniform("Material.Ks", vec3(0.9f, 0.9f, 0.9f));
@@ -88,7 +90,21 @@ void SceneBasic_Uniform::render()
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, 0.0f, 0.0f));
 	setMatrices();
-	plane.render();
+	platform.render();
+
+	// render car
+
+	prog.setUniform("Material.Kd", vec3(0.7f, 0.7f, 0.7f));
+	prog.setUniform("Material.Ks", vec3(0.9f, 0.9f, 0.9f));
+	prog.setUniform("Material.Ka", vec3(0.2f, 0.2f, 0.2f));
+	prog.setUniform("Material.Shininess", 100.f);
+
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, 1.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
+
+	setMatrices();
+	car->render();
 }
 
 void SceneBasic_Uniform::resize(int w, int h)

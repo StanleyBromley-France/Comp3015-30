@@ -8,12 +8,15 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "helper/plane.h"
+#include "helper/objmesh.h"
 
 
 class SceneBasic_Uniform : public Scene
 {
 private:
-    Plane plane;
+    Plane platform;
+    std::unique_ptr<ObjMesh> car;
+
 
     GLSLProgram prog;
     float tPrev;
