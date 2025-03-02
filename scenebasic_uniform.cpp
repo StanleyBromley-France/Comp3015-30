@@ -24,7 +24,7 @@ using glm::mat4;
 
 SceneBasic_Uniform::SceneBasic_Uniform()
 	: 
-	platform(50.0f, 50.0f, 1, 1),
+	platform(25.0f, 25.0f, 1, 1),
 	tPrev(0),
 	angle(0)
 {
@@ -41,20 +41,23 @@ void SceneBasic_Uniform::initScene()
 
 	// light settings
 
-	prog.setUniform("Spotlight.L", vec3(0.9f));
+	prog.setUniform("Spotlight.L", vec3(1.5f));
 	prog.setUniform("Spotlight.La", vec3(0.5f));
-	prog.setUniform("Spotlight.Exponent", 50.f);
+	prog.setUniform("Spotlight.Exponent", 20.f);
 	prog.setUniform("Spotlight.Cutoff", glm::radians(15.0f));
 
 	// texture
 
 	GLuint orange = Texture::loadTexture("media/texture/diffuse-orange.png");
 	GLuint black = Texture::loadTexture("media/texture/diffuse-black.png");
+	GLuint normal = Texture::loadTexture("media/texture/normal.png");
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, orange);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, black);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, normal);
 }
 
 
@@ -74,21 +77,33 @@ void SceneBasic_Uniform::compile()
 
 void SceneBasic_Uniform::update(float t)
 {
-	// light position update
+	// update view
+	view = CamControls::getViewMatrix();
 
+	// Add a speed control variable
+	float rotationSpeed = 1.0f; // Adjust this value to control rotation speed
+
+	// Light position update
 	float deltaT = t - tPrev;
 	if (tPrev == 0.0f) deltaT = 0.0f;
 	tPrev = t;
-	angle += 0.25f * deltaT;
+
+	// Update angle using the rotation speed
+	angle += rotationSpeed * deltaT; // Use rotationSpeed to control speed
 	if (angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
 
-	vec4 lightPos = vec4(10.0f * cos(angle), 10.0f, 10.0f * sin(angle), 1.0f);
-	prog.setUniform("Spotlight.Position", vec3(view * lightPos));
-	mat3 normalMatrix = mat3(vec3(view[0]), vec3(view[1]), vec3(view[2]));
-	prog.setUniform("Spotlight.Direction", normalMatrix * vec3(-lightPos));
+	// Light position: Rotate diagonally around the origin
+	float radius = 7.0f; // Distance from the origin
+	vec4 lightPos = vec4(radius * cos(angle), radius, radius * sin(angle), 1.0f); // Diagonal rotation
 
-	// update view
-	view = CamControls::getViewMatrix();
+	// Transform light position to view space
+	prog.setUniform("Spotlight.Position", vec3(view * lightPos));
+
+	// Calculate light direction: Point from light position to origin (0, 0, 0)
+	vec3 lightDir = normalize(vec3(0.0f) - vec3(lightPos)); // Direction toward origin
+	mat3 normalMatrix = mat3(vec3(view[0]), vec3(view[1]), vec3(view[2]));
+	prog.setUniform("Spotlight.Direction", normalMatrix * lightDir);
+
 }
 
 void SceneBasic_Uniform::render()
