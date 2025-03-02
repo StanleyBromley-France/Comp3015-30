@@ -4,6 +4,7 @@
 #include <cstdlib>
 
 #include <string>
+#include <array>
 using std::string;
 
 #include <iostream>
@@ -31,6 +32,15 @@ SceneBasic_Uniform::SceneBasic_Uniform()
 	skybox(100.0f)
 {
 	car = ObjMesh::load("media/model/car.obj", true);
+
+	// colours
+	orange = Texture::loadTexture("media/texture/diffuse-orange.png");
+	black = Texture::loadTexture("media/texture/diffuse-black.png");
+	blue = Texture::loadTexture("media/texture/diffuse-blue.png");
+	darkblue = Texture::loadTexture("media/texture/diffuse-darkblue.png");
+	darkgrey = Texture::loadTexture("media/texture/diffuse-darkgrey.png");
+	grey = Texture::loadTexture("media/texture/diffuse-grey.png");
+	red = Texture::loadTexture("media/texture/diffuse-red.png");
 }
 
 void SceneBasic_Uniform::initScene()
@@ -52,14 +62,12 @@ void SceneBasic_Uniform::initScene()
 
 	GLuint cubeTex = Texture::loadCubeMap("media/texture/yokohama/yokohama", ".jpg");
 
-	GLuint orange = Texture::loadTexture("media/texture/diffuse-orange.png");
-	GLuint black = Texture::loadTexture("media/texture/diffuse-black.png");
 	GLuint normal = Texture::loadTexture("media/texture/normal.png");
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, orange);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, black);
+	glBindTexture(GL_TEXTURE_2D, orange);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, normal);
 
@@ -145,6 +153,7 @@ void SceneBasic_Uniform::update(float t)
 
 
 	SetCarRotation();
+	handleTextureSelection();
 }
 
 void SceneBasic_Uniform::render()
@@ -354,4 +363,40 @@ void SceneBasic_Uniform::SetCarRotation()
         carRotation -= ROTATION_SPEED * deltaTime;
         isNegative = true;
     }
+}
+
+void SceneBasic_Uniform::handleTextureSelection()
+{
+	// Non-static array using member texture variables
+	std::array<GLuint, 7> colorTextures = {
+		orange,      // Key 1
+		black,       // Key 2
+		blue,        // Key 3
+		darkblue,    // Key 4
+		darkgrey,    // Key 5
+		grey,        // Key 6
+		red          // Key 7
+	};
+
+	GLFWwindow* window = glfwGetCurrentContext();
+
+	for (int key = GLFW_KEY_1; key <= GLFW_KEY_8; ++key)
+	{
+		if (glfwGetKey(window, key) == GLFW_PRESS)
+		{
+			const int textureIndex = key - GLFW_KEY_1;
+			if (textureIndex >= 0 && textureIndex < colorTextures.size())
+			{
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, colorTextures[textureIndex]);
+
+				if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+					return;
+
+				glActiveTexture(GL_TEXTURE2);
+				glBindTexture(GL_TEXTURE_2D, colorTextures[textureIndex]);
+				return;
+			}
+		}
+	}
 }

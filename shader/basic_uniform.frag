@@ -38,6 +38,7 @@ uniform SpotLightInfo Spotlight;
 uniform MaterialInfo Material;
 uniform bool IsTextured;
 uniform bool IsToonLighting;
+uniform float mixLevel = 0.5;
 
 uniform bool IsSkyBox;
 
@@ -72,7 +73,7 @@ vec3 BlinnPhongModel(vec3 pos, vec3 n){
         vec4 texColor1 =  texture(Tex1, TexCoord);
         vec4 texColor2 =  texture(Tex2, TexCoord);
 
-        vec3 texColor = mix(texColor1.rgb, texColor2.rgb, 0.0);
+        vec3 texColor = mix(texColor1.rgb, texColor2.rgb, mixLevel);
         ambientBase = texColor;
         diffuseBase = texColor;
     } else { // mat data

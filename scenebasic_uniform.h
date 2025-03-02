@@ -40,7 +40,15 @@ private:
 
     bool toonShading = false;
     float carRotation = 45.0f;
+    GLuint orange;
+    GLuint black;
+    GLuint blue;
+    GLuint darkblue;
+    GLuint darkgrey;
+    GLuint grey;
+    GLuint red;
 
+    void handleTextureSelection();
     void SetCarRotation();
 
 public:
