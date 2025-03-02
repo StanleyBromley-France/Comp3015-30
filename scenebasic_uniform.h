@@ -18,6 +18,9 @@ private:
     std::unique_ptr<ObjMesh> car;
     SkyBox skybox;
 
+    GLuint hdrFBO = 0, quad, hdrTex, avgTex;
+
+
     GLSLProgram prog;
     float tPrev;
     float angle;
@@ -25,10 +28,18 @@ private:
     void setMatrices();
     void compile();
 
+    void setupFBO();
+    void pass1();
+    void pass2();
+    void pass3();
+    void pass4();
+    void drawScene();
+    void computeLogAveLuminance();
+
     // customisation settings
 
     bool toonShading = false;
-    float carRoation = 45.0f;
+    float carRotation = 45.0f;
 
     void SetCarRotation();
 
