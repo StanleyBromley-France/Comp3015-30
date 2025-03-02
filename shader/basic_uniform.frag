@@ -31,6 +31,10 @@ struct MaterialInfo{
 uniform SpotLightInfo Spotlight;
 uniform MaterialInfo Material;
 uniform bool IsTextured;
+uniform bool IsToonLighting;
+
+const int levels = 3;
+const float scaleFactor = 1.0 / levels;
 
 vec3 BlinnPhongModel(vec3 pos, vec3 n){
 
@@ -60,6 +64,10 @@ vec3 BlinnPhongModel(vec3 pos, vec3 n){
     if (angle >= 0.0 && angle < Spotlight.Cutoff){
         spotScale = pow(cosAng, Spotlight.Exponent);
         float sDotN = max(dot(s,n), 0.0);
+
+        if(IsToonLighting)
+        diffuse = diffuseBase * floor(sDotN * levels) * scaleFactor;
+        else
         diffuse = diffuseBase * sDotN;
 
         if(sDotN > 0.0){

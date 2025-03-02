@@ -58,6 +58,8 @@ void SceneBasic_Uniform::initScene()
 	glBindTexture(GL_TEXTURE_2D, black);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, normal);
+
+	prog.setUniform("IsToonLighting", toonShading);
 }
 
 
@@ -81,7 +83,7 @@ void SceneBasic_Uniform::update(float t)
 	view = CamControls::getViewMatrix();
 
 	// Add a speed control variable
-	float rotationSpeed = 1.0f; // Adjust this value to control rotation speed
+	float rotationSpeed = .25f; // Adjust this value to control rotation speed
 
 	// Light position update
 	float deltaT = t - tPrev;
@@ -104,6 +106,19 @@ void SceneBasic_Uniform::update(float t)
 	mat3 normalMatrix = mat3(vec3(view[0]), vec3(view[1]), vec3(view[2]));
 	prog.setUniform("Spotlight.Direction", normalMatrix * lightDir);
 
+	static bool keyPressed = false;
+	// Inside your main loop
+	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_T) == GLFW_PRESS) {
+		if (!keyPressed) {
+			toonShading = !toonShading; // Toggle toonShading
+			keyPressed = true; // Mark key as pressed
+			prog.setUniform("IsToonLighting", toonShading);
+
+		}
+	}
+	else {
+		keyPressed = false; // Reset key state when T is released
+	}
 }
 
 void SceneBasic_Uniform::render()
@@ -137,6 +152,8 @@ void SceneBasic_Uniform::render()
 
 	setMatrices();
 	car->render();
+
+
 }
 
 void SceneBasic_Uniform::resize(int w, int h)

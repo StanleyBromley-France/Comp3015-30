@@ -25,6 +25,10 @@ private:
     void setMatrices();
     void compile();
 
+    // customisation settings
+
+    bool toonShading = false;
+
 public:
     SceneBasic_Uniform();
 
