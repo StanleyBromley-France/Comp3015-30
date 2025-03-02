@@ -317,28 +317,41 @@ void SceneBasic_Uniform::computeLogAveLuminance()
 
 void SceneBasic_Uniform::SetCarRotation()
 {
-	static bool playAnimation = true;
-	static bool spaceKeyPressed = false;
-	static bool isNegative = false;
+    static bool playAnimation = true;
+    static bool spaceKeyPressed = false;
+    static bool isNegative = false;
+    static double lastFrameTime = glfwGetTime(); // Time tracking
 
-	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE) == GLFW_PRESS) {
-		if (!spaceKeyPressed) {
-			spaceKeyPressed = true;
-			playAnimation = !playAnimation;
-		}
-	}
-	else
-		spaceKeyPressed = false;
+    // Calculate delta time
+    double currentTime = glfwGetTime();
+    float deltaTime = static_cast<float>(currentTime - lastFrameTime);
+    lastFrameTime = currentTime;
 
-	if (playAnimation)
-		carRotation += isNegative ? -0.25f : 0.25f;
+    // Rotation speed in degrees per second (adjust as needed)
+    const float ROTATION_SPEED = 15.0f; // Equivalent to 0.25f/frame at 60 FPS
 
-	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_RIGHT) == GLFW_PRESS) {
-		carRotation += 0.25f; // Increase speed
-		isNegative = false;
-	}
-	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT) == GLFW_PRESS) {
-		carRotation -= 0.25f; // Decrease speed
-		isNegative = true;
-	}
+    // Space key toggles animation
+    if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE) == GLFW_PRESS) {
+        if (!spaceKeyPressed) {
+            spaceKeyPressed = true;
+            playAnimation = !playAnimation;
+        }
+    } else {
+        spaceKeyPressed = false;
+    }
+
+    // Automatic rotation
+    if (playAnimation) {
+        carRotation += (isNegative ? -ROTATION_SPEED : ROTATION_SPEED) * deltaTime;
+    }
+
+    // Manual rotation controls
+    if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        carRotation += ROTATION_SPEED * deltaTime;
+        isNegative = false;
+    }
+    if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT) == GLFW_PRESS) {
+        carRotation -= ROTATION_SPEED * deltaTime;
+        isNegative = true;
+    }
 }
