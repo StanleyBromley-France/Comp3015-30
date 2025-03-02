@@ -5,10 +5,14 @@ in vec3 Normal;
 in vec2 TexCoord;
 in vec3 Tangent;
 in vec3 Bitangent;
+in vec3 VecPos;
 
 layout (binding = 0) uniform sampler2D Tex1;
 layout (binding = 1) uniform sampler2D Tex2;
 layout (binding = 2) uniform sampler2D NormalTex;
+
+layout (binding = 3) uniform samplerCube SkyBoxTex;
+
 
 layout (location = 0) out vec4 FragColor;
 
@@ -32,6 +36,8 @@ uniform SpotLightInfo Spotlight;
 uniform MaterialInfo Material;
 uniform bool IsTextured;
 uniform bool IsToonLighting;
+
+uniform bool IsSkyBox;
 
 const int levels = 3;
 const float scaleFactor = 1.0 / levels;
@@ -81,6 +87,15 @@ vec3 BlinnPhongModel(vec3 pos, vec3 n){
 }
 
 void main() {
+
+    if(IsSkyBox){
+    
+        vec3 skyTexColor = texture(SkyBoxTex, normalize(VecPos)).rbg;
+        skyTexColor = pow(skyTexColor, vec3(1.0 / 2.2));
+        FragColor = vec4(skyTexColor, 1.0);
+        return;
+    }
+
     // Calculate the TBN matrix
     vec3 T = normalize(Tangent);
     vec3 B = normalize(Bitangent);
@@ -97,4 +112,6 @@ void main() {
         FragColor = vec4(BlinnPhongModel(Position, worldNormal), 1.0);
     else
         FragColor = vec4(BlinnPhongModel(Position, Normal), 1.0);
+
+
 }

@@ -4,11 +4,11 @@
 
 // Initialize static member variables
 glm::vec3 CamControls::cameraPosition = glm::vec3(0);
-glm::vec3 CamControls::center = glm::vec3(0.0f, 0.75f, 0.0f);
+glm::vec3 CamControls::center = glm::vec3(0.0f, 3.75f, 0.0f);
 glm::vec3 CamControls::up = glm::vec3(0.0f, 1.0f, 0.0f);
-float CamControls::radius = 5.0f;
-float CamControls::theta = 0.0f;
-float CamControls::phi = glm::radians(45.0f);
+float CamControls::radius = 30.0f;
+float CamControls::theta = glm::radians(25.0f);
+float CamControls::phi = glm::radians(65.0f);
 double CamControls::lastX = 0.0;
 double CamControls::lastY = 0.0;
 bool CamControls::isDragging = false;
@@ -28,7 +28,7 @@ glm::mat4 CamControls::getViewMatrix() {
 
 void CamControls::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     radius -= static_cast<float>(yoffset) * 0.5f;
-    radius = glm::clamp(radius, 1.0f, 50.0f);
+    radius = glm::clamp(radius, 5.0f, 25.0f);
     updateCameraVectors();
 }
 

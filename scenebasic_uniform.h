@@ -9,14 +9,14 @@
 
 #include "helper/plane.h"
 #include "helper/objmesh.h"
-
+#include "helper/skybox.h"
 
 class SceneBasic_Uniform : public Scene
 {
 private:
     Plane platform;
     std::unique_ptr<ObjMesh> car;
-
+    SkyBox skybox;
 
     GLSLProgram prog;
     float tPrev;

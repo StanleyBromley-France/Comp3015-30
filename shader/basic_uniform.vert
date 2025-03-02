@@ -10,6 +10,8 @@ out vec2 TexCoord;
 out vec3 Tangent;
 out vec3 Bitangent;
 
+out vec3 VecPos;
+
 uniform mat4 ModelViewMatrix;
 uniform mat3 NormalMatrix;
 uniform mat4 ProjectionMatrix;
@@ -51,6 +53,9 @@ void main()
     // Transform tangent and bitangent to view space
     Tangent = normalize(NormalMatrix * Tangent);
     Bitangent = normalize(NormalMatrix * Bitangent);
+
+
+    VecPos = VertexPosition;
 
     // Output vertex position
     gl_Position = MVP * vec4(VertexPosition, 1.0);

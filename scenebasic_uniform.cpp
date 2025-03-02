@@ -24,9 +24,10 @@ using glm::mat4;
 
 SceneBasic_Uniform::SceneBasic_Uniform()
 	: 
-	platform(25.0f, 25.0f, 1, 1),
+	platform(500.0f, 500.0f, 1, 1),
 	tPrev(0),
-	angle(0)
+	angle(0),
+	skybox(100.0f)
 {
 	car = ObjMesh::load("media/model/car.obj", true);
 }
@@ -48,6 +49,9 @@ void SceneBasic_Uniform::initScene()
 
 	// texture
 
+	GLuint cubeTex = Texture::loadCubeMap("media/texture/yokohama/yokohama", ".jpg");
+
+
 	GLuint orange = Texture::loadTexture("media/texture/diffuse-orange.png");
 	GLuint black = Texture::loadTexture("media/texture/diffuse-black.png");
 	GLuint normal = Texture::loadTexture("media/texture/normal.png");
@@ -58,6 +62,9 @@ void SceneBasic_Uniform::initScene()
 	glBindTexture(GL_TEXTURE_2D, black);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, normal);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTex);
 
 	prog.setUniform("IsToonLighting", toonShading);
 }
@@ -95,7 +102,7 @@ void SceneBasic_Uniform::update(float t)
 	if (angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
 
 	// Light position: Rotate diagonally around the origin
-	float radius = 7.0f; // Distance from the origin
+	float radius = 35.0f; // Distance from the origin
 	vec4 lightPos = vec4(radius * cos(angle), radius, radius * sin(angle), 1.0f); // Diagonal rotation
 
 	// Transform light position to view space
@@ -107,7 +114,7 @@ void SceneBasic_Uniform::update(float t)
 	prog.setUniform("Spotlight.Direction", normalMatrix * lightDir);
 
 	static bool keyPressed = false;
-	// Inside your main loop
+
 	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_T) == GLFW_PRESS) {
 		if (!keyPressed) {
 			toonShading = !toonShading; // Toggle toonShading
@@ -125,6 +132,17 @@ void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	// render skybox
+
+	//vec3 cameraPos = vec3(7.0f * cos(angle), 2.0f, 7.0f * sin(angle));
+	
+	prog.setUniform("IsSkyBox", true);
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, 11.0f, 0.0f));
+	setMatrices();
+	skybox.render();
+
+
 	// render platform
 
 	prog.setUniform("Material.Kd", vec3(0.7f, 0.7f, 0.7f));
@@ -132,6 +150,7 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Material.Ka", vec3(0.2f, 0.2f, 0.2f));
 	prog.setUniform("Material.Shininess", 100.f);
 	prog.setUniform("IsTextured", false);
+	prog.setUniform("IsSkyBox", false);
 
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, 0.0f, 0.0f));
@@ -145,8 +164,10 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Material.Ka", vec3(0.2f, 0.2f, 0.2f));
 	prog.setUniform("Material.Shininess", 250.f);
 	prog.setUniform("IsTextured", true);
+	prog.setUniform("IsSkyBox", false);
 
 	model = mat4(1.0f);
+	model = glm::scale(model, vec3(5.f));
 	model = glm::translate(model, vec3(0.0f, 0.8f, 0.0f));
 	model = glm::rotate(model, glm::radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
 
