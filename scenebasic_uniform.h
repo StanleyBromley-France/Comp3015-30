@@ -28,6 +28,9 @@ private:
     // customisation settings
 
     bool toonShading = false;
+    float carRoation = 45.0f;
+
+    void SetCarRotation();
 
 public:
     SceneBasic_Uniform();

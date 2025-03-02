@@ -28,7 +28,7 @@ glm::mat4 CamControls::getViewMatrix() {
 
 void CamControls::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     radius -= static_cast<float>(yoffset) * 0.5f;
-    radius = glm::clamp(radius, 5.0f, 25.0f);
+    radius = glm::clamp(radius, 15.0f, 25.0f);
     updateCameraVectors();
 }
 

@@ -22,6 +22,7 @@ using glm::vec4;
 using glm::mat3;
 using glm::mat4;
 
+
 SceneBasic_Uniform::SceneBasic_Uniform()
 	: 
 	platform(500.0f, 500.0f, 1, 1),
@@ -113,19 +114,22 @@ void SceneBasic_Uniform::update(float t)
 	mat3 normalMatrix = mat3(vec3(view[0]), vec3(view[1]), vec3(view[2]));
 	prog.setUniform("Spotlight.Direction", normalMatrix * lightDir);
 
-	static bool keyPressed = false;
+	static bool tKeyPressed = false;
 
 	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_T) == GLFW_PRESS) {
-		if (!keyPressed) {
+		if (!tKeyPressed) {
 			toonShading = !toonShading; // Toggle toonShading
-			keyPressed = true; // Mark key as pressed
+			tKeyPressed = true; // Mark key as pressed
 			prog.setUniform("IsToonLighting", toonShading);
 
 		}
 	}
 	else {
-		keyPressed = false; // Reset key state when T is released
+		tKeyPressed = false; // Reset key state when T is released
 	}
+
+
+	SetCarRotation();
 }
 
 void SceneBasic_Uniform::render()
@@ -169,7 +173,7 @@ void SceneBasic_Uniform::render()
 	model = mat4(1.0f);
 	model = glm::scale(model, vec3(5.f));
 	model = glm::translate(model, vec3(0.0f, 0.8f, 0.0f));
-	model = glm::rotate(model, glm::radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(carRoation), vec3(0.0f, 1.0f, 0.0f));
 
 	setMatrices();
 	car->render();
@@ -190,4 +194,32 @@ void SceneBasic_Uniform::setMatrices() {
 	prog.setUniform("ModelViewMatrix", mv);
 	prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
 	prog.setUniform("MVP", projection * mv);
+}
+
+void SceneBasic_Uniform::SetCarRotation()
+{
+	static bool playAnimation = true;
+	static bool spaceKeyPressed = false;
+	static bool isNegative = false;
+
+	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE) == GLFW_PRESS) {
+		if (!spaceKeyPressed) {
+			spaceKeyPressed = true;
+			playAnimation = !playAnimation;
+		}
+	}
+	else
+		spaceKeyPressed = false;
+
+	if (playAnimation)
+		carRoation += isNegative ? -0.005f : 0.005f;
+
+	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_RIGHT) == GLFW_PRESS) {
+		carRoation += 0.005f; // Increase speed
+		isNegative = false;
+	}
+	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT) == GLFW_PRESS) {
+		carRoation -= 0.005f; // Decrease speed
+		isNegative = true;
+	}
 }
