@@ -39,6 +39,8 @@ uniform MaterialInfo Material;
 uniform bool IsTextured;
 uniform bool IsToonLighting;
 uniform float mixLevel = 0.5;
+uniform bool DoNormalMap = true;
+
 
 uniform bool IsSkyBox;
 
@@ -48,7 +50,7 @@ uniform int Pass;
 uniform float AveLum;
 uniform float Exposure = 0.35;
 uniform float White = 0.928;
-uniform bool DoToneMap = true;
+uniform bool DoToneMap = false;
 
 uniform mat3 rgb2xyz = mat3(
     0.4142564, 0.2126729, 0.0193339,
@@ -127,7 +129,13 @@ vec4 pass1(){
     // Sample the normal map and transform to world space
     vec3 normalMap = texture(NormalTex, TexCoord).rgb;
     normalMap = normalize(normalMap * 2.0 - 1.0); // Convert from [0,1] to [-1,1]
-    vec3 worldNormal = normalize(TBN * normalMap);
+    vec3 worldNormal;
+
+    // for normal map toggle
+    if(DoNormalMap)
+        worldNormal = normalize(TBN * normalMap);
+    else
+        worldNormal = Normal;
 
     if(IsTextured)
     // Use the transformed normal in the lighting calculation
@@ -152,7 +160,7 @@ vec4 pass2()
     xyzCol.y = L;
     xyzCol.z = (L * (1 - xyYCol.x - xyYCol.y))/xyYCol.y;
 
-
+    // hdr toggle
     if(DoToneMap)
         return vec4(xyz2rgb * xyzCol, 1.0);
     else

@@ -136,9 +136,10 @@ void SceneBasic_Uniform::update(float t)
 	// Update angle using the rotation speed
 	angle += rotationSpeed * deltaT; // Use rotationSpeed to control speed
 	if (angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
+	
+	// toon shading toggle
 
 	static bool tKeyPressed = false;
-
 	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_T) == GLFW_PRESS) {
 		if (!tKeyPressed) {
 			toonShading = !toonShading; // Toggle toonShading
@@ -148,12 +149,41 @@ void SceneBasic_Uniform::update(float t)
 		}
 	}
 	else {
-		tKeyPressed = false; // Reset key state when T is released
+		tKeyPressed = false;
 	}
 
 
 	SetCarRotation();
 	handleTextureSelection();
+
+	// hdr toggle
+
+	static bool hKeyPressed = false;
+	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_H) == GLFW_PRESS) {
+		if (!hKeyPressed) {
+			hKeyPressed = true;
+			hdrMode = !hdrMode;
+			prog.setUniform("DoToneMap", hdrMode);
+		}
+	}
+	else {
+		hKeyPressed = false;
+	}
+	
+	// normal map toggle
+
+	static bool nKeyPressed = false;
+	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_N) == GLFW_PRESS) {
+		if (!nKeyPressed) {
+			nKeyPressed = true;
+			normalMode = !normalMode;
+			prog.setUniform("DoNormalMap", normalMode);
+		}
+	}
+	else {
+		nKeyPressed = false;
+	}
+
 }
 
 void SceneBasic_Uniform::render()
@@ -186,15 +216,12 @@ void SceneBasic_Uniform::pass2() {
 
 	prog.use();
 	prog.setUniform("Pass", 2);
-	prog.setUniform("DoToneMap", false);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClearColor(.0f, .0f, 1.0f, 1.0f);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
-
-
 
 	model = mat4(1.0f);
 	view = mat4(1.0f);
@@ -337,7 +364,7 @@ void SceneBasic_Uniform::SetCarRotation()
     lastFrameTime = currentTime;
 
     // Rotation speed in degrees per second (adjust as needed)
-    const float ROTATION_SPEED = 15.0f; // Equivalent to 0.25f/frame at 60 FPS
+    const float ROTATION_SPEED = 10.0f; // Equivalent to 0.25f/frame at 60 FPS
 
     // Space key toggles animation
     if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE) == GLFW_PRESS) {
