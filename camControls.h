@@ -30,4 +30,6 @@ private:
     static double lastY;
     static bool isDragging;
     static float minY;
+    static float maxY;
+
 };

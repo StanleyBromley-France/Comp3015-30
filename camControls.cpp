@@ -13,6 +13,8 @@ double CamControls::lastX = 0.0;
 double CamControls::lastY = 0.0;
 bool CamControls::isDragging = false;
 float CamControls::minY = 0.5f;
+float CamControls::maxY = 15.f;
+
 
 void CamControls::initialise(GLFWwindow* window) {
     glfwSetScrollCallback(window, scrollCallback);
@@ -28,7 +30,7 @@ glm::mat4 CamControls::getViewMatrix() {
 
 void CamControls::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     radius -= static_cast<float>(yoffset) * 0.5f;
-    radius = glm::clamp(radius, 15.0f, 30.0f);
+    radius = glm::clamp(radius, 20.0f, 30.0f);
     updateCameraVectors();
 }
 
@@ -68,14 +70,17 @@ void CamControls::updateCameraVectors() {
     cameraPosition.y = center.y + radius * cos(phi);
     cameraPosition.z = center.z + radius * sin(phi) * sin(theta);
 
-    // cameraPosition.y must be >= 0.5
-    if (cameraPosition.y < minY) {
-        // adjusts phi to ensure cameraPosition.y >= 0.5
-        float targetCosPhi = (minY - center.y) / radius;
-        targetCosPhi = glm::clamp(targetCosPhi, -1.0f, 1.0f); // ensures valid range for acos
+    // Clamp cameraPosition.y between minY and maxY
+    if (cameraPosition.y < minY || cameraPosition.y > maxY) {
+        // Calculate the target cos(phi) based on the clamped Y value
+        float targetY = glm::clamp(cameraPosition.y, minY, maxY);
+        float targetCosPhi = (targetY - center.y) / radius;
+        targetCosPhi = glm::clamp(targetCosPhi, -1.0f, 1.0f); // Ensure valid range for acos
+
+        // Adjust phi to ensure cameraPosition.y is within the bounds
         phi = glm::acos(targetCosPhi);
 
-        // recalculates the camera position with the adjusted phi
+        // Recalculate the camera position with the adjusted phi
         cameraPosition.x = center.x + radius * sin(phi) * cos(theta);
         cameraPosition.y = center.y + radius * cos(phi);
         cameraPosition.z = center.z + radius * sin(phi) * sin(theta);

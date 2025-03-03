@@ -18,7 +18,9 @@ private:
     std::unique_ptr<ObjMesh> car;
     SkyBox skybox;
 
-    GLuint hdrFBO = 0, quad = 0, hdrTex = 0, avgTex = 0;
+    GLuint fsQuad = 0, hdrFbo = 0, blurFbo = 0, hdrTex = 0, tex1 = 0, tex2 = 0;
+    GLuint linearSampler, nearestSampler;
+    int bloomBufWidth, bloomBufHeight;
 
     GLSLProgram prog;
     float tPrev;
@@ -30,13 +32,17 @@ private:
     void setupFBO();
     void pass1();
     void pass2();
+    void pass3();
+    void pass4();
+    void pass5();
     void drawScene();
+    float gauss(float, float);
     void computeLogAveLuminance();
 
     // customisation settings
 
     bool toonShading = false;
-    bool hdrMode = false;
+    bool hdrMode = true;
     bool normalMode = true;
     float carRotation = 45.0f;
     GLuint orange;

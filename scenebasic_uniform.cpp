@@ -53,8 +53,8 @@ void SceneBasic_Uniform::initScene()
 
 	// light settings
 
-	prog.setUniform("Spotlight.L", vec3(1.5f));
-	prog.setUniform("Spotlight.La", vec3(0.5f));
+	prog.setUniform("Spotlight.L", vec3(.6f));
+	prog.setUniform("Spotlight.La", vec3(.2f));
 	prog.setUniform("Spotlight.Exponent", 20.f);
 	prog.setUniform("Spotlight.Cutoff", glm::radians(15.0f));
 
@@ -64,14 +64,14 @@ void SceneBasic_Uniform::initScene()
 
 	GLuint normal = Texture::loadTexture("media/texture/normal.png");
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, orange);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, orange);
 	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, orange);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, orange);
+	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, normal);
 
-	glActiveTexture(GL_TEXTURE4);
+	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTex);
 
 	prog.setUniform("IsToonLighting", toonShading);
@@ -84,28 +84,65 @@ void SceneBasic_Uniform::initScene()
 	-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
 	-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f
 	};
-
 	GLfloat tc[] = {
 	0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
 	0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f
 	};
-
+	// Set up the buffers
 	unsigned int handle[2];
 	glGenBuffers(2, handle);
 	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
 	glBufferData(GL_ARRAY_BUFFER, 6 * 3 * sizeof(float), verts, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
 	glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), tc, GL_STATIC_DRAW);
-
-	glGenVertexArrays(1, &quad);
-	glBindVertexArray(quad);
+	// Set up the vertex array object
+	glGenVertexArrays(1, &fsQuad);
+	glBindVertexArray(fsQuad);
 	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(0); // Vertex position
 	glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
 	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(2); // Texture coordinates
 	glBindVertexArray(0);
+	prog.setUniform("LumThresh", 1.7f);
+	float weights[10], sum, sigma2 = 25.0f;
+	// Compute and sum the weights
+	weights[0] = gauss(0, sigma2);
+	sum = weights[0];
+	for (int i = 1; i < 10; i++) {
+		weights[i] = gauss(float(i), sigma2);
+		sum += 2 * weights[i];
+	}
+	// Normalize the weights and set the uniform
+	for (int i = 0; i < 10; i++) {
+		std::stringstream uniName;
+		uniName << "Weight[" << i << "]";
+		float val = weights[i] / sum;
+		prog.setUniform(uniName.str().c_str(), val);
+	}
+	// Set up two sampler objects for linear and nearest filtering
+	GLuint samplers[2];
+	glGenSamplers(2, samplers);
+	linearSampler = samplers[0];
+	nearestSampler = samplers[1];
+	GLfloat border[] = { 0.0f,0.0f,0.0f,0.0f };
+	// Set up the nearest sampler
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glSamplerParameterfv(nearestSampler, GL_TEXTURE_BORDER_COLOR, border);
+	// Set up the linear sampler
+	glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glSamplerParameterfv(linearSampler, GL_TEXTURE_BORDER_COLOR, border);
+	// We want nearest sampling except for the last pass.
+	glBindSampler(0, nearestSampler);
+	glBindSampler(1, nearestSampler);
+	glBindSampler(2, nearestSampler);
 }
 
 
@@ -155,20 +192,6 @@ void SceneBasic_Uniform::update(float t)
 
 	SetCarRotation();
 	handleTextureSelection();
-
-	// hdr toggle
-
-	static bool hKeyPressed = false;
-	if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_H) == GLFW_PRESS) {
-		if (!hKeyPressed) {
-			hKeyPressed = true;
-			hdrMode = !hdrMode;
-			prog.setUniform("DoToneMap", hdrMode);
-		}
-	}
-	else {
-		hKeyPressed = false;
-	}
 	
 	// normal map toggle
 
@@ -191,17 +214,18 @@ void SceneBasic_Uniform::render()
 	pass1();
 	computeLogAveLuminance();
 	pass2();
+	pass3();
+	pass4();
+	pass5();
 }
 
 void SceneBasic_Uniform::pass1() {
 
-	//prog.use();
 	prog.setUniform("Pass", 1);
-	//prog.setUniform("DoToneMap", false);
 
 	glClearColor(1.0f, .0f, .0f, 1.0f);
 	glViewport(0, 0, width, height);
-	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFbo);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
@@ -212,24 +236,61 @@ void SceneBasic_Uniform::pass1() {
 	drawScene();
 }
 
-void SceneBasic_Uniform::pass2() {
-
-	prog.use();
+void SceneBasic_Uniform::pass2()
+{
 	prog.setUniform("Pass", 2);
+	glBindFramebuffer(GL_FRAMEBUFFER, blurFbo);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClearColor(.0f, .0f, 1.0f, 1.0f);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
+	glViewport(0, 0, bloomBufWidth, bloomBufHeight);
 	glDisable(GL_DEPTH_TEST);
+
+	glClearColor(0, 0, 0, 0);
+
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	model = mat4(1.0f);
 	view = mat4(1.0f);
 	projection = mat4(1.0f);
+
 	setMatrices();
 
-	glBindVertexArray(quad);
+	glBindVertexArray(fsQuad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);}
+
+void SceneBasic_Uniform::pass3()
+{
+	prog.setUniform("Pass", 3);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2, 0);
+
+	glBindVertexArray(fsQuad);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void SceneBasic_Uniform::pass4()
+{
+	prog.setUniform("Pass", 4);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
+
+	glBindVertexArray(fsQuad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void SceneBasic_Uniform::pass5()
+{
+	prog.setUniform("Pass", 5);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glClear(GL_COLOR_BUFFER_BIT);
+	glViewport(0, 0, width, height);
+
+	glBindSampler(1, linearSampler);
+	glBindVertexArray(fsQuad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindSampler(1, nearestSampler);
 }
 
 void SceneBasic_Uniform::drawScene() {
@@ -264,7 +325,7 @@ void SceneBasic_Uniform::drawScene() {
 	prog.setUniform("Material.Kd", vec3(0.7f, 0.7f, 0.7f));
 	prog.setUniform("Material.Ks", vec3(0.9f, 0.9f, 0.9f));
 	prog.setUniform("Material.Ka", vec3(0.2f, 0.2f, 0.2f));
-	prog.setUniform("Material.Shininess", 100.f);
+	prog.setUniform("Material.Shininess", 25.f);
 	prog.setUniform("IsTextured", false);
 	prog.setUniform("IsSkyBox", false);
 
@@ -278,7 +339,7 @@ void SceneBasic_Uniform::drawScene() {
 	prog.setUniform("Material.Kd", vec3(0.7f, 0.7f, 0.7f));
 	prog.setUniform("Material.Ks", vec3(0.9f, 0.9f, 0.9f));
 	prog.setUniform("Material.Ka", vec3(0.2f, 0.2f, 0.2f));
-	prog.setUniform("Material.Shininess", 250.f);
+	prog.setUniform("Material.Shininess", 25.f);
 	prog.setUniform("IsTextured", true);
 	prog.setUniform("IsSkyBox", false);
 
@@ -307,32 +368,51 @@ void SceneBasic_Uniform::setMatrices() {
 	prog.setUniform("MVP", projection * mv);
 }
 
+//sets up the fbo for rendering to a texture
 void SceneBasic_Uniform::setupFBO() {
+	// Generate and bind the framebuffer
+	glGenFramebuffers(1, &hdrFbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFbo);
+	// Create the texture object
+	glGenTextures(1, &hdrTex);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdrTex);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, width, height);
+	// Bind the texture to the FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrTex, 0);
+	// Create the depth buffer
 	GLuint depthBuf;
-	glGenFramebuffers(1, &hdrFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-
 	glGenRenderbuffers(1, &depthBuf);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthBuf);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-
-	glActiveTexture(GL_TEXTURE0);
-	glGenTextures(1, &hdrTex);
-	glBindTexture(GL_TEXTURE_2D, hdrTex);
-	
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, width, height);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrTex, 0);
-
+	// Bind the depth buffer to the FBO
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+		GL_RENDERBUFFER, depthBuf);
+	// Set the targets for the fragment output variables
 	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
 	glDrawBuffers(1, drawBuffers);
-
+	// Create an FBO for the bright-pass filter and blur
+	glGenFramebuffers(1, &blurFbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, blurFbo);
+	// Create two texture objects to ping-pong for the bright-pass filter
+	// and the two-pass blur
+	bloomBufWidth = width / 8;
+	bloomBufHeight = height / 8;
+	glGenTextures(1, &tex1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, tex1);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, bloomBufWidth, bloomBufHeight);
+	glActiveTexture(GL_TEXTURE2);
+	glGenTextures(1, &tex2);
+	glBindTexture(GL_TEXTURE_2D, tex2);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, bloomBufWidth, bloomBufHeight);
+	// Bind tex1 to the FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
+	glDrawBuffers(1, drawBuffers);
+	// Unbind the framebuffer, and revert to default framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
 
 void SceneBasic_Uniform::computeLogAveLuminance()
 {
@@ -349,6 +429,13 @@ void SceneBasic_Uniform::computeLogAveLuminance()
 	}
 	prog.use();
 	prog.setUniform("AveLum", expf(sum / size));
+}
+
+float SceneBasic_Uniform::gauss(float x, float sigma2)
+{
+	double coeff = 1.0 / (glm::two_pi<float>() * sigma2);
+	double exponent = -(x * x) / (2.0 * sigma2);
+	return (float)(coeff * exp(exponent));
 }
 
 void SceneBasic_Uniform::SetCarRotation()
@@ -414,13 +501,13 @@ void SceneBasic_Uniform::handleTextureSelection()
 			const int textureIndex = key - GLFW_KEY_1;
 			if (textureIndex >= 0 && textureIndex < colorTextures.size())
 			{
-				glActiveTexture(GL_TEXTURE1);
+				glActiveTexture(GL_TEXTURE3);
 				glBindTexture(GL_TEXTURE_2D, colorTextures[textureIndex]);
 
 				if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 					return;
 
-				glActiveTexture(GL_TEXTURE2);
+				glActiveTexture(GL_TEXTURE4);
 				glBindTexture(GL_TEXTURE_2D, colorTextures[textureIndex]);
 				return;
 			}
