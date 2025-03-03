@@ -1,6 +1,6 @@
 # OpenGL Scene Renderer
 
-This project is an OpenGL-based scene renderer that demonstrates advanced rendering techniques including toon shading, normal mapping, HDR rendering, and bloom effects. It leverages GLSL shaders, framebuffer objects (FBOs), and interactive camera controls to create a dynamic 3D scene featuring a rotating car, a textured platform, and a skybox.
+This project is an OpenGL-based scene renderer that demonstrates advanced rendering techniques including toon shading, normal mapping, HDR rendering, and bloom effects. It leverages GLSL shaders, framebuffer objects (FBOs), and interactive camera controls to create a dynamic 3D scene featuring a rotating car, a  platform, and a skybox.
 
 Development of this project was perfomed using Visual Studio 2022 on a pc using windows 10
 
